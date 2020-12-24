@@ -1,0 +1,94 @@
+import tkinter as tk
+from tkinter import *
+from pubsub import pub
+
+class CalibrateLRAModel:
+    def __init__(self):
+        return
+
+    # controller > model
+    def calibrate_func(self, channel_num):
+        # code to actually play the stimuli
+        print("model - starting playback")
+        print("channel num: " + str(channel_num))
+
+
+class CalibrateLRAView:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent = parent     # The frame the widgets are packed in
+        return
+
+    # this method runs first, and calls the methods below
+    def setup(self):
+        self.create_widgets()
+        self.setup_layout()
+
+    # creates the widgets
+    def create_widgets(self):
+        # creating the main frames
+        self.main_frame = Frame(self.parent, height=673, width=1100)        # main frame that holds the widgets
+        self.select_frame = tk.LabelFrame(self.main_frame, text="Select LRA")
+        self.channel_frame = tk.Frame(self.select_frame)
+        self.channel_label = tk.Label(self.channel_frame, text="Channel Number")
+        self.channel_ctrl = tk.Entry(self.channel_frame, width=8)
+        self.calibrate_LRA_button = tk.Button(self.main_frame, text="Save Final Filter Set", bg="Blue", width=24,
+                                              command=self.calibrate)
+        # creating widgets inside left frame - sampling rate
+        self.waveforms_frame = tk.LabelFrame(self.main_frame, text="Waveforms & Spectra")
+        self.waveform1 = tk.Label(self.waveforms_frame, text="waveform 1 will go here")
+
+    # packs (orients) the widgets
+    def setup_layout(self):
+        # orienting the main frames
+        self.main_frame.pack(pady=10)
+        self.main_frame.pack_propagate(0)
+        # orienting widgets in the top frame - channel number
+        self.select_frame.pack(anchor='nw')
+        self.channel_frame.pack(fill="x", side='left')
+        self.channel_label.pack(side='left', padx=5)
+        self.channel_ctrl.pack(side='left', padx=5)
+        # orienting widgets inside top frame - select_frame final filter set
+        self.calibrate_LRA_button.pack(anchor='nw', pady=10)
+        # orienting widgets inside the bottom frame -
+        self.waveforms_frame.pack(anchor='nw')
+        self.waveform1.pack(fill="x", anchor='nw')
+
+    # view > controller
+    def calibrate(self):
+        print("view - calibrate")                      # prints to console
+        pub.sendMessage("Calibrate_Button_Pressed")           # sends message to controller
+
+    # view > controller
+    def get_channel_num(self):
+        return self.channel_ctrl.get()
+
+
+class CalibrateLRAController:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent_calibrate = parent
+        self.model_calibrate = CalibrateLRAModel()
+        self.view_calibrate = CalibrateLRAView(self.parent_calibrate)
+        self.view_calibrate.setup()
+
+        # view > controller
+        pub.subscribe(self.calibrate_button_pressed, "Calibrate_Button_Pressed")
+
+    # controller > model
+    def calibrate_button_pressed(self):
+        print("controller - calibrate button pressed")      # prints to console
+        self.channel_num = self.view_calibrate.get_channel_num()
+        self.model_calibrate.calibrate_func(self.channel_num)
+
+
+# Can run this file in its own window here (not part of the main window)
+if __name__ == "__main__":
+    window = Tk()
+    WIDTH = 1200
+    HEIGHT = 750
+    window.geometry("%sx%s" % (WIDTH, HEIGHT))
+    window.title("Calibrate LRA File")
+
+    app = CalibrateLRAController(window)
+    window.mainloop()
