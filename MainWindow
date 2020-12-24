@@ -1,0 +1,79 @@
+import CreateFilters
+import Playback
+import CalibrateLRA
+import DesignExperiment
+import Home
+import tkinter as tk
+from tkinter import *
+from tkinter import ttk
+from PIL import Image, ImageTk
+
+
+class Main(CreateFilters.CreateFiltersController, Playback.PlaybackController,
+           CalibrateLRA.CalibrateLRAController, DesignExperiment.DesignController,
+           Home.HomeController):
+
+    def __init__(self, parent):
+        # initialize variables (frames)
+        self.parent = parent
+        self.create_filter_class = CreateFilters
+        self.playback_class = Playback
+        self.calibrate_class = CalibrateLRA
+        self.design_class = DesignExperiment
+        self.home_class = Home
+
+        # settings:
+        self.p_color = '#255403'      # primary color -   main background
+        self.s_color = '#3A8504'      # secondary color - frame color
+        self.t_color = '#87CA0C'      # tertiary color -  accent color
+        self.h_font = 'calibri 40'    # header font
+        self.sh_font = 'verdana 15'   # subheader font
+        self.r_font = 'calibri 10'    # regular font
+        self.background = Image.open("background1.png")
+        self.background = self.background.resize((1175, 750), Image.ANTIALIAS)
+        self.test = ImageTk.PhotoImage(self.background)
+
+        # create the notebook
+        self.creating_notebook()
+
+    def creating_notebook(self):
+        self.style = ttk.Style(window)
+        self.style.theme_create("style1", parent="alt", settings={
+            "TNotebook": {"configure": {"tabmargins": [4, 15, 4, 0], "tabposition": "n", "background": self.p_color}},
+            "TNotebook.Tab": {
+                "configure": {"height": 15, "background": self.t_color, "foreground": "black", "font": "systemSystemFont 20",
+                              "padx": 20}}})
+        self.style.theme_use("style1")
+        self.notebook = ttk.Notebook(window)
+        # Creating the frames (pages) for each tab
+        self.home = tk.Frame(self.notebook, background=self.p_color)
+        self.dash = tk.Frame(self.notebook, background=self.p_color)
+        self.create = tk.Frame(self.notebook, background=self.p_color)
+        self.calibrate = tk.Frame(self.notebook, background=self.p_color)
+        self.design = tk.Frame(self.notebook, background=self.p_color)
+        self.playback = tk.Frame(self.notebook, background=self.p_color)
+        # Adding a tab for each frame
+        self.notebook.add(self.home, text="  Home  ")
+        self.notebook.add(self.dash, text="    Dashboard    ")
+        self.notebook.add(self.create, text="    Create Compensation Filters    ")
+        self.notebook.add(self.calibrate, text="    Calibrate LRAs    ")
+        self.notebook.add(self.design, text="    Design Experiments    ")
+        self.notebook.add(self.playback, text="    Playback    ")
+        self.notebook.pack(fill=tk.X)
+        # attaching controllers to their frames
+        self.create_filter_class.CreateFiltersController.__init__(self, self.create)
+        self.playback_class.PlaybackController.__init__(self, self.playback)
+        self.calibrate_class.CalibrateLRAController.__init__(self, self.calibrate)
+        self.design_class.DesignController.__init__(self, self.design)
+        self.home_class.HomeController.__init__(self, self.home)
+
+# Can run the main window here
+if __name__ == "__main__":
+    window = Tk()
+    WIDTH = 1200
+    HEIGHT = 750
+    window.geometry("%sx%s" % (WIDTH, HEIGHT))
+    window.title("Calibration Project")
+
+    app = Main(window)
+    window.mainloop()
