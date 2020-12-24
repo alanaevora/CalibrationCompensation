@@ -1,0 +1,184 @@
+import tkinter as tk
+from tkinter import *
+from pubsub import pub
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+import numpy as np
+
+class CreateFiltersModel:
+    def __init__(self):
+        return
+
+    # controller > model (receiver)
+    def create_filters_func(self, low_freq, high_freq, sample_rate, nfft):
+        print("model_home - creating filters")
+        print("low freq : " + str(low_freq))
+        print("high freq: " + str(high_freq))
+        print("sample rate: " + str(sample_rate))
+        print("nfft: " + str(nfft))
+        # code to actually create the filter here
+        # added random figure for now
+        self.fig = Figure(figsize=(5, 2), dpi=100)
+        self.t = np.arange(0, 3, .01)
+        self.fig.add_subplot(111).plot(self.t, 2 * np.sin(2 * np.pi * self.t))
+        self.display_filters()
+
+    # model > controller (sender)
+    def display_filters(self):
+        print("model - filters ready")
+        pub.sendMessage("Displaying_Filters")
+
+    def get_ch1_fig(self):
+        return self.fig
+
+
+
+
+
+class CreateFiltersView:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent = parent     # The frame the widgets are packed in
+
+        # settings:
+        self.p_color = '#255403'      # primary color -   main background
+        self.s_color = '#3A8504'      # secondary color - frame color
+        self.t_color = '#87CA0C'      # tertiary color -  accent color
+        self.h_font = 'calibri 40'    # header font
+        self.sh_font = 'verdana 15'   # subheader font
+        self.r_font = 'calibri 10'    # regular font
+        return
+
+    # this method runs first, and calls the methods below
+    def setup(self):
+        self.create_widgets()
+        self.setup_layout()
+
+    # creates the widgets
+    def create_widgets(self):
+        # creating the main frames
+        self.main_frame = Frame(self.parent, height=673, width=1100, background=self.t_color)    # main frame that holds the widgets
+        self.left_frame = Frame(self.main_frame, background=self.t_color)                        # frame that holds the figures on the left
+        self.right_frame = Frame(self.main_frame, background=self.t_color)                       # frame that holds the input boxes on the right
+        # widgets inside left frame - freq range
+        self.freq_range_frame = tk.LabelFrame(self.left_frame, text="Frequency range", background=self.t_color) # freq range box
+        self.low_freq_frame = tk.Frame(self.freq_range_frame, background=self.t_color)
+        self.low_freq_label = tk.Label(self.low_freq_frame, text="Low freq", background=self.t_color)
+        self.low_freq_ctrl = tk.Entry(self.low_freq_frame, width=8)
+        self.high_freq_frame = tk.Frame(self.freq_range_frame, background=self.t_color)
+        self.high_freq_label = tk.Label(self.high_freq_frame, text="High freq", background=self.t_color)
+        self.high_freq_ctrl = tk.Entry(self.high_freq_frame, width=8)
+        # widgets inside left frame - sampling rate
+        self.sample_nfft_frame = tk.LabelFrame(self.left_frame, text="Sampling rate", background=self.t_color)  # sample rate box
+        self.sample_rate_frame = tk.Frame(self.sample_nfft_frame, background=self.t_color)
+        self.sample_rate_label = tk.Label(self.sample_rate_frame, text="Sampling rate", background=self.t_color)
+        self.sample_rate_ctrl = tk.Entry(self.sample_rate_frame, width=8)
+        self.nfft_frame = tk.Frame(self.sample_nfft_frame, background=self.t_color)
+        self.nfft_label = tk.Label(self.nfft_frame, text="nfft", background=self.t_color)
+        self.nfft_ctrl = tk.Entry(self.nfft_frame, width=8)
+        # widgets inside left frame - create filters button
+        self.create_filters = tk.Button(self.left_frame, text="Generate Compensation Filter", width=24,
+                                        command=self.create_filters, background=self.t_color)
+        # widgets inside right frame - figures
+        self.filters_frame = tk.LabelFrame(self.right_frame, text="Generated Filters", background=self.t_color)
+
+    # packs (orients) the widgets
+    def setup_layout(self):
+        # orienting the main frames
+        self.main_frame.pack(pady=10)
+        self.main_frame.pack_propagate(0)
+        self.right_frame.pack(side='right', anchor='n')
+        self.left_frame.pack(side='left', anchor='n')
+        # orienting the widgets inside the left frame - freq range
+        self.freq_range_frame.pack(expand="yes", anchor="nw", padx=10)
+        self.low_freq_frame.pack(expand='yes', fill='x')
+        self.low_freq_label.pack(side='left', padx=10, pady=5)
+        self.low_freq_ctrl.pack(side='right', pady=5)
+        self.high_freq_frame.pack(expand='yes', fill='x')
+        self.high_freq_label.pack(side='left', padx=10, pady=5)
+        self.high_freq_ctrl.pack(side='right', pady=5)
+        # orienting the widgets inside the left frame - sampling rate
+        self.sample_nfft_frame.pack(expand="yes", anchor="nw", padx=10)
+        self.sample_rate_frame.pack(expand='yes', fill='x')
+        self.sample_rate_label.pack(side='left', padx=10, pady=5)
+        self.sample_rate_ctrl.pack(side='right', pady=5)
+        self.nfft_frame.pack(expand='yes', fill='x')
+        self.nfft_label.pack(side='left', padx=10, pady=5)
+        self.nfft_ctrl.pack(side='right', pady=5)
+        # orienting the widgets inside the left frame - create filters button
+        self.create_filters.pack(side="bottom", pady=10)
+        # orienting the widgets inside left frame - figures
+        self.filters_frame.pack(expand='yes', fill='x')
+
+    def get_low_freq(self):
+        return self.low_freq_ctrl.get()
+    def get_high_freq(self):
+        return self.high_freq_ctrl.get()
+    def get_sample_rate(self):
+        return self.sample_rate_ctrl.get()
+    def get_nfft(self):
+        return self.nfft_ctrl.get()
+
+    # view > controller (sender)
+    def create_filters(self):
+        print("view - create_filters")                          # prints to console
+        pub.sendMessage("Create_Filters_Button_Pressed")        # sends message to controller
+
+    # controller > view (reciever)
+    def display_filters_func(self, ch1_fig):
+        print("view - display_filters")                         # prints to console
+        self.create_filter_widgets(ch1_fig)                     # create filter widgets
+        self.setup_filters_layout()                             # orient filter widgets
+    def create_filter_widgets(self, ch1_fig):
+        self.channel_frame = tk.Frame(self.filters_frame, background=self.t_color)
+        self.label = tk.Label(self.channel_frame, text="Channel 1", background=self.t_color)
+        self.canvas = FigureCanvasTkAgg(ch1_fig, master=self.channel_frame)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.channel_frame)
+    def setup_filters_layout(self):
+        self.channel_frame.pack(fill='both', anchor='nw')
+        self.label.pack(side='left', anchor='n')
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side='left', fill='both', expand=1, anchor="n")
+        self.toolbar.update()
+        self.canvas.get_tk_widget().pack(side='left', fill='both', expand=1, anchor="n")
+
+class CreateFiltersController:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent_create = parent
+        self.model_create = CreateFiltersModel()
+        self.view_create = CreateFiltersView(self.parent_create)
+        self.view_create.setup()
+
+        # view > controller
+        pub.subscribe(self.create_filters_button_pressed, "Create_Filters_Button_Pressed")
+
+        # model > controller
+        pub.subscribe(self.display_filters, "Displaying_Filters")
+
+    # controller > model
+    def create_filters_button_pressed(self):
+        print("controller - create filter button pressed")      # prints to console
+        self.low_freq = self.view_create.get_low_freq()
+        self.high_freq = self.view_create.get_high_freq()
+        self.sample_rate = self.view_create.get_sample_rate()
+        self.nfft = self.view_create.get_nfft()
+        self.model_create.create_filters_func(self.low_freq, self.high_freq, self.sample_rate, self.nfft)
+
+    # controller > view
+    def display_filters(self):
+        print("controller - displaying filters")                # prints to console
+        self.ch1_fig = self.model_create.get_ch1_fig()
+        self.view_create.display_filters_func(self.ch1_fig)
+
+# Can run this file in its own window here (not part of the main window)
+if __name__ == "__main__":
+    window = Tk()
+    WIDTH = 1200
+    HEIGHT = 750
+    window.geometry("%sx%s" % (WIDTH, HEIGHT))
+    window.title("Create Filter File")
+
+    app = CreateFiltersController(window)
+    window.mainloop()
