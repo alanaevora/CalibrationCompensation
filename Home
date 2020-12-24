@@ -1,0 +1,152 @@
+import tkinter as tk
+import tkscrolledframe as sf
+from tkinter import *
+from pubsub import pub
+from PIL import Image, ImageTk
+from tkinter import ttk
+
+
+class HomeModel:
+    def __init__(self):
+        return
+
+
+class HomeView:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent = parent     # The frame the widgets are packed in
+        # settings:
+        self.p_color = '#255403'      # primary color -   main background
+        self.s_color = '#3A8504'      # secondary color - frame color
+        self.t_color = '#87CA0C'      # tertiary color -  accent color
+        self.h_font = 'calibri 40'    # header font
+        self.sh_font = 'verdana 15'   # subheader font
+        self.r_font = 'calibri 10'    # regular font
+        return
+
+    # this method runs first, and calls the methods below
+    def setup(self):
+        self.create_widgets()
+        self.setup_layout()
+
+    # creates the widgets
+    def create_widgets(self):
+        # creating the main frames
+        self.main_frame = tk.Frame(self.parent, width=1200, height=750, background=self.p_color)                    # main frame that holds the widgets
+        self.scrollable_frame = sf.ScrolledFrame(self.main_frame, width=1200, height=750, background=self.p_color)
+        # Bind the arrow keys and scroll wheel
+        self.scrollable_frame.bind_arrow_keys(self.main_frame)
+        self.scrollable_frame.bind_scroll_wheel(self.main_frame)
+        # creating a frame within the ScrolledFrame
+        # main screen image
+        self.inner_frame = self.scrollable_frame.display_widget(Frame, width=1175, height=750, background=self.p_color)
+        self.background_image = Image.open("background1.png")
+        self.background_image = self.background_image.resize((1175, 750), Image.ANTIALIAS)
+        self.test = ImageTk.PhotoImage(self.background_image)
+        self.background = tk.Label(self.inner_frame, image=self.test)
+        self.background.image = self.test
+
+
+        # help frame
+        # self.help_main_frame = tk.Frame(self.inner_frame, height=5000, width=1100)
+        # self.home_label = tk.Label(self.help_main_frame, text="Help")
+        # # faq frame
+        # self.faq_frame = Frame(self.help_main_frame, height=500, width=1000)
+        # self.faq_image = Image.open("faqnew.png")
+        # self.faq_image = self.faq_image.resize((500, 500), Image.ANTIALIAS)
+        # self.faq_pic = ImageTk.PhotoImage(self.faq_image)
+        # self.label_faq = tk.Label(self.faq_frame, image=self.faq_pic)
+        # self.label_faq.image = self.test
+        # self.faq_frame_text = tk.Frame(self.faq_frame, height=500, width=1000)
+        # self.FAQ_label = tk.Label(self.faq_frame_text, text="Frequently Asked Questions")
+        # # video frame
+        # self.video_frame = tk.Frame(self.help_main_frame, height=500, width=1000)
+        # self.video_image = Image.open("videonew.png")
+        # self.video_image = self.video_image.resize((500, 500), Image.ANTIALIAS)
+        # self.video_pic = ImageTk.PhotoImage(self.video_image)
+        # self.label_video = tk.Label(self.video_frame, image=self.video_pic)
+        # self.label_video.image = self.test
+        # self.video_frame_text = tk.Frame(self.video_frame, height=500, width=1000)
+        # self.video_label = tk.Label(self.video_frame_text, text="Video Series")
+        # # More (called "paper" below) Frame
+        # self.paper_frame = Frame(self.help_main_frame, height=500, width=1000)
+        # self.paper_image = Image.open("papernew.png")
+        # self.paper_image = self.paper_image.resize((500, 500), Image.ANTIALIAS)
+        # self.paper_pic = ImageTk.PhotoImage(self.paper_image)
+        # self.label_paper = Label(self.paper_frame, image=self.paper_pic)
+        # self.paper_frame_text = Frame(self.paper_frame, height=500, width=1000)
+        # self.more_resources = Label(self.paper_frame_text, text="More Resources")
+        # self.link1 = Label(self.paper_frame_text, text="Vibrational Playback Experiments: Challenges and Solutions",
+        #             cursor="X_cursor")
+        # self.link1.bind("<Button-1>", lambda e: self.callback(
+        #     "https://www.researchgate.net/publication/264231273_Vibrational_Playback_Experiments_Challenges_and_Solutions"))
+
+    # packs (orients) the widgets
+    def setup_layout(self):
+        # orienting the main frames
+        self.main_frame.pack(pady=10)
+        self.main_frame.pack_propagate(0)
+        self.scrollable_frame.pack(side=TOP, fill="both")
+        # orienting the widgets within the scrollable frame
+        # main screen image
+        self.background.place(x=0, y=0)
+        # # help frame
+        # self.help_main_frame.pack(pady=30)
+        # self.help_main_frame.pack_propagate(0)
+        # self.home_label.pack(padx=10, pady=25)
+        # # faq frame
+        # self.faq_frame.pack()
+        # self.faq_frame.pack_propagate(0)
+        # self.label_faq.pack(pady=15, side=LEFT)
+        # self.faq_frame_text.pack()
+        # self.faq_frame_text.pack_propagate(0)
+        # self.FAQ_label.pack(anchor="nw", pady=25, padx=10)
+        # # video frame
+        # self.video_frame.pack(pady=40)
+        # self.video_frame.pack_propagate(0)
+        # self.label_video.pack(pady=15, side=LEFT)
+        # self.video_frame_text.pack()
+        # self.video_frame_text.pack_propagate(0)
+        # self.video_label.pack(anchor="nw", pady=25, padx=10)
+        # # more frame
+        # self.paper_frame.pack()
+        # self.paper_frame.pack_propagate(0)
+        # self.label_paper.pack(pady=15, side=LEFT)
+        # self.paper_frame_text.pack()
+        # self.paper_frame_text.pack_propagate(0)
+        # self.more_resources.pack(anchor="nw", pady=25, padx=10)
+        # self.paper_frame = Frame(self.help_main_frame, height=500, width=1000)
+        # self.paper_frame.pack()
+        # self.paper_frame.pack_propagate(0)
+        # self.label_paper.pack(pady=15, side=LEFT)
+        # self.paper_frame_text.pack()
+        # self.paper_frame_text.pack_propagate(0)
+        # self.more_resources.pack(anchor="nw", pady=25, padx=10)
+        # self.link1.pack(anchor="nw", padx=10)
+        # self.link1.pack(anchor="nw", padx=10)
+
+    # view > controller
+    # def create_filter(self):
+    #     print("view_home - create_filter")                           # prints to console
+    #     pub.sendMessage("Create_Filters_Button_Pressed")        # sends message to controller
+
+
+class HomeController:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent_home = parent
+        self.model_home = HomeModel()
+        self.view_home = HomeView(self.parent_home)
+        self.view_home.setup()
+
+
+# Can run this file in its own window here (not part of the main window)
+if __name__ == "__main__":
+    window = Tk()
+    WIDTH = 1200
+    HEIGHT = 750
+    window.geometry("%sx%s" % (WIDTH, HEIGHT))
+    window.title("Home File")
+
+    app = HomeController(window)
+    window.mainloop()
