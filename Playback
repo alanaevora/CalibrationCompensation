@@ -1,0 +1,224 @@
+import tkinter as tk
+from tkinter import *
+from pubsub import pub
+
+class PlaybackModel:
+    def __init__(self):
+        return
+
+    # controller > model
+    def start_playback_func(self, exp_name, round_num, ch1_file, ch2_file, ch3_file, ch4_file, ch5_file, ch6_file,
+                            ch7_file, ch8_file, stim_len, cycle_len, tot_duration):
+        # code to actually play the stimuli
+        print("model - starting playback")
+        print("experiment name: " + str(exp_name))
+        print("round number: " + str(round_num))
+        print("channel 1 file: " + str(ch1_file))
+        print("channel 2 file: " + str(ch2_file))
+        print("channel 3 file: " + str(ch3_file))
+        print("channel 4 file: " + str(ch4_file))
+        print("channel 5 file: " + str(ch5_file))
+        print("channel 6 file: " + str(ch6_file))
+        print("channel 7 file: " + str(ch7_file))
+        print("channel 8 file: " + str(ch8_file))
+        print("stimulus length: " + str(stim_len))
+        print("cycle length: " + str(cycle_len))
+        print("total duration: " + str(tot_duration))
+
+
+class PlaybackView:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent = parent     # The frame the widgets are packed in
+        return
+
+    # this method runs first, and calls the methods below
+    def setup(self):
+        self.create_widgets()
+        self.setup_layout()
+
+    # creates the widgets
+    def create_widgets(self):
+        # creating the main frames
+        self.main_frame = Frame(self.parent, height=673, width=1100)                    # main frame that holds the widgets
+        self.left_frame = Frame(self.main_frame)
+        self.right_frame = Frame(self.main_frame)
+        # creating widgets inside left frame - freq range
+        self.select_num_round_frame = tk.LabelFrame(self.left_frame, text="Select experiment number and round")
+        self.playback_ex_frame = tk.Frame(self.select_num_round_frame)
+        self.playback_ex_label = tk.Label(self.playback_ex_frame, text="Playback experiment name")
+        self.playback_ex_ctrl = tk.Entry(self.playback_ex_frame, width=8)
+        self.playback_round_frame = tk.Frame(self.select_num_round_frame)
+        self.playback_round_label = tk.Label(self.playback_round_frame, text="Round number")
+        self.playback_round_ctrl = tk.Entry(self.playback_round_frame, width=8)
+        # creating widgets inside left frame - sampling rate
+        self.files_frame = tk.LabelFrame(self.left_frame, text="Playback files")
+        self.ch1_frame = tk.Frame(self.files_frame)
+        self.ch1_label = tk.Label(self.ch1_frame, text="CH1")
+        self.ch1_ctrl = tk.Entry(self.ch1_frame, width=20)
+        self.ch2_frame = tk.Frame(self.files_frame)
+        self.ch2_label = tk.Label(self.ch2_frame, text="CH2")
+        self.ch2_ctrl = tk.Entry(self.ch2_frame, width=20)
+        self.ch3_frame = tk.Frame(self.files_frame)
+        self.ch3_label = tk.Label(self.ch3_frame, text="CH3")
+        self.ch3_ctrl = tk.Entry(self.ch3_frame, width=20)
+        self.ch4_frame = tk.Frame(self.files_frame)
+        self.ch4_label = tk.Label(self.ch4_frame, text="CH4")
+        self.ch4_ctrl = tk.Entry(self.ch4_frame, width=20)
+        self.ch5_frame = tk.Frame(self.files_frame)
+        self.ch5_label = tk.Label(self.ch5_frame, text="CH5")
+        self.ch5_ctrl = tk.Entry(self.ch5_frame, width=20)
+        self.ch6_frame = tk.Frame(self.files_frame)
+        self.ch6_label = tk.Label(self.ch6_frame, text="CH6")
+        self.ch6_ctrl = tk.Entry(self.ch6_frame, width=20)
+        self.ch7_frame = tk.Frame(self.files_frame)
+        self.ch7_label = tk.Label(self.ch7_frame, text="CH7")
+        self.ch7_ctrl = tk.Entry(self.ch7_frame, width=20)
+        self.ch8_frame = tk.Frame(self.files_frame)
+        self.ch8_label = tk.Label(self.ch8_frame, text="CH8")
+        self.ch8_ctrl = tk.Entry(self.ch8_frame, width=20)
+        # creating widgets inside right frame -  playback cycle len & duration
+        self.settings_frame = tk.LabelFrame(self.right_frame, text="Playback cycle length and duration")
+        self.stim_len_frame = tk.Frame(self.settings_frame)
+        self.stim_len_label = tk.Label(self.stim_len_frame, text="Stimulus length (s)")
+        self.stim_len_ctrl = tk.Entry(self.stim_len_frame, width=8)
+        self.cycle_len_frame = tk.Frame(self.settings_frame)
+        self.cycle_len_label = tk.Label(self.cycle_len_frame, text="Cycle length (s)")
+        self.cycle_len_ctrl = tk.Entry(self.cycle_len_frame, width=8)
+        self.tot_duration_frame = tk.Frame(self.settings_frame)
+        self.tot_duration_label = tk.Label(self.tot_duration_frame, text="Total duration (min)")
+        self.tot_duration_ctrl = tk.Entry(self.tot_duration_frame, width=8)
+        # creating widgets inside right frame - start playback button
+        self.start_playback = tk.Button(self.right_frame, text="Start Playback", bg="Blue", width=24,
+                                        command=self.start_playback)
+
+    # packs (orients) the widgets
+    def setup_layout(self):
+        # orienting the main frames
+        self.main_frame.pack(pady=10)
+        self.main_frame.pack_propagate(0)
+        self.right_frame.pack(side='right', anchor='n')
+        self.left_frame.pack(side='left', anchor='n')
+        # orienting the widgets inside the left frame - experiment num & round
+        self.select_num_round_frame.pack(expand="yes", anchor="nw", padx=10, pady=5)
+        self.playback_ex_frame.pack(anchor="w", fill="x")
+        self.playback_ex_label.pack(side='left', padx=5)
+        self.playback_ex_ctrl.pack(side='right', padx=5)
+        self.playback_round_frame.pack(anchor="w", fill="x")
+        self.playback_round_label.pack(side='left', padx=5)
+        self.playback_round_ctrl.pack(side='right', padx=5)
+        # orienting the widgets inside the left frame - files
+        self.files_frame.pack(expand="yes", anchor="nw", padx=10, pady=5)
+        self.ch1_frame.pack(anchor="w", fill="x")
+        self.ch1_label.pack(side='left', padx=5)
+        self.ch1_ctrl.pack(side='left', padx=5)
+        self.ch2_frame.pack(anchor="w", fill="x")
+        self.ch2_label.pack(side='left', padx=5)
+        self.ch2_ctrl.pack(side='left', padx=5)
+        self.ch3_frame.pack(anchor="w", fill="x")
+        self.ch3_label.pack(side='left', padx=5)
+        self.ch3_ctrl.pack(side='left', padx=5)
+        self.ch4_frame.pack(anchor="w", fill="x")
+        self.ch4_label.pack(side='left', padx=5)
+        self.ch4_ctrl.pack(side='left', padx=5)
+        self.ch5_frame.pack(anchor="w", fill="x")
+        self.ch5_label.pack(side='left', padx=5)
+        self.ch5_ctrl.pack(side='left', padx=5)
+        self.ch6_frame.pack(anchor="w", fill="x")
+        self.ch6_label.pack(side='left', padx=5)
+        self.ch6_ctrl.pack(side='left', padx=5)
+        self.ch7_frame.pack(anchor="w", fill="x")
+        self.ch7_label.pack(side='left', padx=5)
+        self.ch7_ctrl.pack(side='left', padx=5)
+        self.ch8_frame.pack(anchor="w", fill="x")
+        self.ch8_label.pack(side='left', padx=5)
+        self.ch8_ctrl.pack(side='left', padx=5)
+        # orienting widgets inside right frame - playback cycle len & duration
+        self.settings_frame.pack(expand="yes", anchor="nw", padx=10)
+        self.stim_len_frame.pack(anchor="w", fill="x")
+        self.stim_len_label.pack(side='left', padx=5)
+        self.stim_len_ctrl.pack(side='right', padx=5)
+        self.cycle_len_frame.pack(anchor="w", fill="x")
+        self.cycle_len_label.pack(side='left', padx=5)
+        self.cycle_len_ctrl.pack(side='right', padx=5)
+        self.tot_duration_frame.pack(anchor="w", fill="x")
+        self.tot_duration_label.pack(side='left', padx=5)
+        self.tot_duration_ctrl.pack(side='right', padx=5)
+        # orienting widgets inside right frame - start playback button
+        self.start_playback.pack(side="bottom", pady=10)
+
+    def get_exp_name(self):
+        return self.playback_ex_ctrl.get()
+    def get_round_num(self):
+        return self.playback_round_ctrl.get()
+    def get_ch1_file(self):
+        return self.ch1_ctrl.get()
+    def get_ch2_file(self):
+        return self.ch2_ctrl.get()
+    def get_ch3_file(self):
+        return self.ch3_ctrl.get()
+    def get_ch4_file(self):
+        return self.ch4_ctrl.get()
+    def get_ch5_file(self):
+        return self.ch5_ctrl.get()
+    def get_ch6_file(self):
+        return self.ch6_ctrl.get()
+    def get_ch7_file(self):
+        return self.ch7_ctrl.get()
+    def get_ch8_file(self):
+        return self.ch8_ctrl.get()
+    def get_stim_len(self):
+        return self.stim_len_ctrl.get()
+    def get_cycle_len(self):
+        return self.cycle_len_ctrl.get()
+    def get_tot_duration(self):
+        return self.tot_duration_ctrl.get()
+
+    # view > controller
+    def start_playback(self):
+        print("view - start playback")                             # prints to console
+        pub.sendMessage("Start_Playback_Button_Pressed")           # sends message to controller
+
+
+class PlaybackController:
+    # Constructor: initialize variables
+    def __init__(self, parent):
+        self.parent_playback = parent
+        self.model_playback = PlaybackModel()
+        self.view_playback = PlaybackView(self.parent_playback)
+        self.view_playback.setup()
+
+        # view > controller
+        pub.subscribe(self.start_playback_button_pressed, "Start_Playback_Button_Pressed")
+
+    # controller > model
+    def start_playback_button_pressed(self):
+        print("controller - start playback button pressed")      # prints to console
+        self.exp_name = self.view_playback.get_exp_name()
+        self.round_num = self.view_playback.get_round_num()
+        self.ch1_file = self.view_playback.get_ch1_file()
+        self.ch2_file = self.view_playback.get_ch2_file()
+        self.ch3_file = self.view_playback.get_ch3_file()
+        self.ch4_file = self.view_playback.get_ch4_file()
+        self.ch5_file = self.view_playback.get_ch5_file()
+        self.ch6_file = self.view_playback.get_ch6_file()
+        self.ch7_file = self.view_playback.get_ch7_file()
+        self.ch8_file = self.view_playback.get_ch8_file()
+        self.stim_len = self.view_playback.get_stim_len()
+        self.cycle_len = self.view_playback.get_cycle_len()
+        self.tot_duration = self.view_playback.get_tot_duration()
+        self.model_playback.start_playback_func(self.exp_name, self.round_num, self.ch1_file, self.ch2_file, self.ch3_file,
+                                                self.ch4_file, self.ch5_file, self.ch6_file, self.ch7_file, self.ch8_file,
+                                                self.view_playback.get_stim_len(), self.view_playback.get_cycle_len(), self.view_playback.get_tot_duration())
+
+
+# Can run this file in its own window here (not part of the main window)
+if __name__ == "__main__":
+    window = Tk()
+    WIDTH = 1200
+    HEIGHT = 750
+    window.geometry("%sx%s" % (WIDTH, HEIGHT))
+    window.title("Playback file")
+
+    app = PlaybackController(window)
+    window.mainloop()
