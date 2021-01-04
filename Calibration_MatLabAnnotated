@@ -1,0 +1,94 @@
+        fs = app.Fs.Value;     % sampling rate
+        nfft = app.NFFT.Value; % nfft
+        pb = rand(2*fs,1)-0.5; % pb = 2 sec of random noise
+        win = ones(size(pb));  % win = array of 1s 
+        ramp=linspace(0,pi,round(fs/5));   % creates a vector (like an array) = linspace(min(x), max(x), #points)
+        win(1:length(ramp)) = 0.5*sin(ramp-pi/2) + 0.5; %
+        win(length(win)-(length(ramp)-1):end) = 0.5*cos(ramp) + 0.5;
+        pb = pb.*win;
+        pb = 0.4 * pb;
+        padding = zeros(fs/6,1);
+        pb1 = [padding; pb; padding; padding; padding];
+        pb8ch(:,1:8) = repmat(pb1,1,8); 
+        audiowrite('Noise_8ch.wav',pb8ch,fs)    % create wave file = audiowrite(name, data, sampling rate)
+
+        % first adjust the playback amplitude, based on where the amp gain i
+        fileReader = dsp.AudioFileReader('Noise_8ch.wav', 'SamplesPerFrame',1024);  % get the random noise file
+        fileWriter = dsp.AudioFileWriter('pre-rec.wav', 'SampleRate',fs);   % open a file to record to
+        aPR = audioPlayerRecorder('SampleRate',fs);     % open recorder
+        aPR.RecorderChannelMapping = [1];   % record to the first channnel
+        aPR.Device = 'US-20x20';            % specifiy the device?
+        while ~isDone(fileReader)
+            audioToPlay = fileReader();         % get the random noise
+            [audioRecorded] = aPR(audioToPlay); % play the random noise
+            fileWriter(audioRecorded)           % save the recording to file called 'pre-rec.wav'
+        end
+
+        release(fileReader);    % close routes (because youre done editing/recording the files)
+        release(fileWriter);    % close routes (because youre done editing/recording the files)
+        release(aPR);           % close routes (because youre done editing/recording the files)
+        pre_rec = audioread('pre-rec.wav'); % open the recording file
+        if max(abs(pre_rec))>0.25      % if the max value in the file is greater than the absolute value of .25
+           adjust = 0.2 / max(abs(pre_rec)); % 0.2 - 0.25 is a good range   % bring it down to .2
+           pb8ch = adjust * pb8ch;  % also adjust the random noise?
+           audiowrite('Noise_8ch.wav',pb8ch,fs) % and make the changes to the random noise in its file
+        end;
+        
+         
+        iterations = 4; %  number of repetitions of filter cycle
+        for iter = 1:iterations
+            
+        % play and record
+          if iter == 1
+              %fileReader = dsp.AudioFileReader('Cat_stim8.wav', 'SamplesPerFrame',1024);
+              fileReader = dsp.AudioFileReader('Noise_8ch.wav', 'SamplesPerFrame',1024);    % if 1st iteration, open the random noise file
+          elseif iter >1
+              %fileReader = dsp.AudioFileReader('Cat_stim8_f.wav', 'SamplesPerFrame',1024);
+              fileReader = dsp.AudioFileReader('Noise_8ch_f.wav', 'SamplesPerFrame',1024);  % if not 1st iteration, open the filter file
+          end
+            
+        fileWriter = dsp.AudioFileWriter('Rec_8ch.wav', 'SampleRate',fs);   % open a file to record to
+
+        aPR = audioPlayerRecorder('SampleRate',fs);     % open recorder
+        aPR.RecorderChannelMapping = [1,2,3,4,5,6,7,8]; % record to all 8 channels
+        %aPR.Device = 'us2020 Mixing Driver';
+       % aPR.Device = 'US-20x20 ASIO';
+        aPR.Device = 'US-20x20';    % specify device?
+            
+        while ~isDone(fileReader)
+            audioToPlay = fileReader();         % get the random noise/filter
+            [audioRecorded] = aPR(audioToPlay); % play the random noise/filter
+            fileWriter(audioRecorded)           % save the new recording to 'Rec_8ch.wav'
+        end
+
+        release(fileReader);    % close routes (because youre done editing/recording the files)
+        release(fileWriter);    % close routes (because youre done editing/recording the files)
+        release(aPR);           % close routes (because youre done editing/recording the files)
+        
+        % convert sensor output to calibrated 'virtual LDV/accel' form
+        rec = audioread('Rec_8ch.wav'); % storing the recorded audio in variable
+        
+        rec_c=[];   % creating an empty array
+        load sensorConversionFilters.mat; % pre-calculated filters for converting sensor (e.g, LRA) output into calibrated LDV / Accel output
+        for m=1:8
+            rec_c(:,m) = filter(sensorConversionFilters(m).b,sensorConversionFilters(m).a, rec(:,m));   % rec_c = the converted filter?
+        end
+        %rec_c = rec;
+        audiowrite('rec_c.wav',rec_c,fs); %%% FOR TESTING - remove
+        
+        % adjust length of recordings to be equal to the playback
+        if iter == 1
+          if length(rec_c)>length(pb8ch)            % if the converted filter is bigger than the recording
+              rec_c(length(pb8ch)+1:end,:) = [];    % shorten the filter
+          elseif length(rec_c)<length(pb8ch)        % if the converted filter is smaller than the recording
+              rec_c(end:length(pb8ch))=0;           % extend the filter
+          end
+        elseif iter>1
+             pb8ch_f = audioread('Noise_8ch_f.wav');% store the original (non-covnerted) filter in variable
+            % pb8ch_f = audioread('Cat_stim8_f.wav');
+          if length(rec_c)>length(pb8ch_f)          % if the converted filter is bigger than the original filter
+              rec_c(length(pb8ch_f)+1:end,:) = [];  % shorten the converted filter
+          elseif length(rec_c)<length(pb8ch_f)      % if the converted filter is smaller than the original filter
+              rec_c(end:length(pb8ch_f))=0;         % extend the converted filter
+          end
+        end
