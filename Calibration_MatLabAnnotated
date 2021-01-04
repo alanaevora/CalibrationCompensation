@@ -1,5 +1,6 @@
-fs = app.Fs.Value;     % sampling rate
-        nfft = app.NFFT.Value; % nfft
+        % filter calculation part
+        fs = app.Fs.Value;     % get sampling rate from entry box
+        nfft = app.NFFT.Value; % get nfft from entry box
         pb = rand(2*fs,1)-0.5; % pb = 2 sec of random noise
         win = ones(size(pb));  % win = array of 1s 
         ramp=linspace(0,pi,round(fs/5));   % creates a vector (like an array) = linspace(min(x), max(x), #points)
@@ -9,8 +10,8 @@ fs = app.Fs.Value;     % sampling rate
         win(length(win)-(length(ramp)-1):end) = 0.5*cos(ramp) + 0.5;
         pb = pb.*win;
         pb = 0.4 * pb;
-        padding = zeros(fs/6,1);
-        pb1 = [padding; pb; padding; padding; padding];
+        padding = zeros(fs/6,1);    % is padding the same thing as silence?
+        pb1 = [padding; pb; padding; padding; padding]; 
         pb8ch(:,1:8) = repmat(pb1,1,8); 
         
         audiowrite('Noise_8ch.wav',pb8ch,fs)    % create wave file = audiowrite(name, data, sampling rate)
