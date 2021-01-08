@@ -1,0 +1,54 @@
+import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import sounddevice as sd
+import soundfile as sf
+
+fs = 1000   # get sampling rate from entry box
+nfft = 200  # get nfft from entry box
+pb = np.random(2*fs, 1)-0.5     # generate 2 sec of random noise
+ramp = np.linspace(0, np.pi, round(fs/5))
+
+# section im confused about
+# win
+# padding
+# pb1
+# pb8ch
+
+sf.write('Noise_8ch.wav', pb8ch, fs)     # create wave file & save the random noise in it
+
+file_reader = sf.read('Noise_8ch.wav')   # open & read random noise file
+
+# record to wave file source: https://python-sounddevice.readthedocs.io/en/0.4.1/usage.html#recording
+# TO DO:
+# specify channel
+# specify device
+# possible source : https://python-sounddevice.readthedocs.io/en/0.3.11/#sounddevice.AsioSettings
+audio_recorded = sd.playrec(file_reader, fs, channels=1)  # playing and recording simultaneously & saving audio as NumPy array
+sd.wait()   # wait for the recording to finish before moving on
+sf.write('pre-rec.wav', audio_recorded, fs)     # write the audio recorded to file
+
+pre_rec = sf.read('pre-rec.wav')            # open the recorded file
+if max(abs(pre_rec)) > 0.25:                # if the amp is over .25
+    adjust = 0.2 / max(abs(pre_rec))        # adjust it
+    pb8ch = adjust * pb8ch
+    sf.write('Noise_8ch.wav', pb8ch, fs)    # and write to the the file
+
+iterations = 4
+
+for iter in iterations:
+
+
+
+
+# trying "ancestral" matlab code
+# from numpy import linspace
+#
+# fs = 1000
+# m = int(2*np.pi/fs)
+# l = int(2*np.pi)
+# t = [0:m:l] # < NOT CORRECT
+# sig = np.sin(t)
+# plt.plot(sig)
+# plt.show()
+
