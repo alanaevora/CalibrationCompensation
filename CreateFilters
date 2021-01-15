@@ -31,9 +31,121 @@ class CreateFiltersModel:
 
     def get_ch1_fig(self):
         return self.fig
+    
+    def filter_calc(self):
+        print("in the filter_cal function")
+        # fs = self.sample_rate # will get sampling rate from entry box
+        # nfft = self.nfft      # will get nfft from entry box
+        # VALUES FROM USER
+        fs = 48000              # only use for testing < DELETE LATER
+        nfft = 100              # only use for testing < DELETE LATER
 
+        # CREATING THE RANDOM NOISE
+        pb = np.random.rand(2 * fs, 1) - 0.5  # generate 2 sec of random noise (vector of evenly spaced random nums)
+        win = np.ones(len(pb))  # array of 1s that is the length of the random noise
+        ramp = np.linspace(0, np.pi, round(fs/5))   # creates a vector = linspace(min(x), max(x), #points)
+        win[0:len(ramp)] = 0.5*np.sin(ramp-np.pi/2) + 0.5   # gradually increase at the beginning
+        win[len(win) - len(ramp) - 1: -1] = 0.5 * np.cos(ramp) + 0.5  # gradually decrease at the end
 
+        # ADDING PADDING TO THE RANDOM NOISE
+        # pb = 0.4 * pb # why
+        padding = np.zeros(round(fs/6))  # array of 0s that is 1/6 of the length of the window
+        pb1 = []
+        pb1 = np.append(pb1, padding)
+        pb1 = np.append(pb1, pb)
+        pb1 = np.append(pb1, padding)
+        pb1 = np.append(pb1, padding)
+        pb1 = np.append(pb1, padding)
 
+        # for testing... view the noise > DELETE LATER
+        self.fig = Figure(figsize=(5, 2), dpi=100)
+        self.t = np.arange(0, 1280, .01)
+        self.fig.add_subplot(111).plot(self.t, pb1)
+        self.display_filters()
+
+        # SAVE THE NOISE
+        pb8ch = pb1     # for testing I dont have 8 channels > FIX LATER
+        sf.write('Noise_8ch.wav', pb8ch, fs)  # create wave file & save the random noise in it
+        file_reader, sample_rate = sf.read('Noise_8ch.wav')  # open & read random noise file
+
+        # FOR TESTING AT HOME I AM GOING TO USE 1 channel
+        print(sd.query_devices())
+        print("USING THIS DEVICE: " + sd.default.device)
+
+        # RECORDING
+        # record to wave file source: https://python-sounddevice.readthedocs.io/en/0.4.1/usage.html#recording
+        # possible source for APO: https://python-sounddevice.readthedocs.io/en/0.3.11/#sounddevice.AsioSettings
+        # file_reader, sample_rate = sf.read('skittles.wav')  # using this file for testing > DELETE LATER
+        print("RECORDING...")
+        audio_recorded = sd.playrec(file_reader, fs, channels=1)  # playing and recording simultaneously & saving audio as NumPy array
+        sd.wait()  # wait for the recording to finish before moving on
+        sf.write('pre-rec.wav', audio_recorded, fs)  # write the audio recorded to file
+
+        # ADJUSTING THE AMP
+        pre_rec, sample_rate = sf.read('pre-rec.wav')  # open the recorded file
+        # for testing... view the recording > DELETE LATER
+        self.fig = Figure(figsize=(5, 2), dpi=100)
+        self.t = np.arange(0, 1280, .01)
+        self.fig.add_subplot(111).plot(self.t, pre_rec)
+        self.display_filters()
+        if max(abs(pre_rec)) > 0.05:                # still need to figure out what this is doing
+            print("exceeds max amp")
+            adjust = 0.2 / max(abs(pre_rec))
+            pb8ch = adjust * pb8ch
+            sf.write('Noise_8ch.wav', pb8ch, fs)
+        else:
+            print("below max amp")
+
+        # OPEN THE FILES TO BE FILTERED
+        iterations = [1, 2, 3, 4]
+        for iter in iterations:
+            if iter == 1:
+                file_reader, sample_rate = sf.read('Noise_8ch.wav')  # if 1st iteration, open the random noise file
+            else:
+                file_reader, sample_rate = sf.read('Noise_8ch_f.wav')  # if not 1st iteration, open the filter file
+
+            # RECORDING
+            print("RECORDING...")
+            audio_recorded = sd.playrec(file_reader, fs, channels=1)  # playing and recording simultaneously & saving audio as NumPy array
+            sd.wait()  # wait for the recording to finish before moving on
+            sf.write('Rec_8ch.wav', audio_recorded, fs)  # write the audio recorded to file
+
+            # CONVERT FILTERS BETWEEN SENSORS
+            # is there something in python to convert sensor to calibrate output?
+            rec_c = []  # save the sensor conversion filters in rec_c
+
+            # ADJUST LENGTH OF CONVERTED OUTPUT
+
+            # PLOT THE RECORDED WAVE FORMS
+            # low_freq = self.low_freq      # will get the low_freq from the user
+            # high_freq = self.high_freq    # will get the hig_freq from the user
+            low_freq = 200                  # for testing > DELETE LATER
+            high_freq = 800                 # for testing > DELETE LATER
+            lo = np.math.floor(low_freq / (fs / nfft))
+            hi = np.math.floor(high_freq / (fs / nfft))
+
+            rec_c_spec = []
+            for s in pb8ch:
+                # for each filter, calculate the amplitude spec and save it in an array
+                rec_c_spec = np.append(rec_c_spec, scipy.signal.welch(s))
+
+            # make plots here
+
+            # GETTING THE AMP SPEC
+            input_spec = []
+            for s in pb8ch:
+                # for each filter, calculate the amplitude spec and save it in an array
+                input_spec = np.append(input_spec, scipy.signal.welch(s))
+
+            # MINIMIZE OUT OF RANGE FREQS
+            r = []
+            for s in pb8ch:
+                r = np.apend(r, np.divide(input_spec, rec_c_spec))
+            r[1:lo, :] = 0          # adjusting values that go under the low freq
+            r[hi + 10: -1, :] = 0   # adjusting values that go over the high freq
+
+            # CREATING FILTERS
+            fr = np.linspace(0,1, len(r))
 
 
 class CreateFiltersView:
