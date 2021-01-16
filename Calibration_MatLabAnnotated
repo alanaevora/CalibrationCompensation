@@ -1,17 +1,34 @@
         % filter calculation part
-        fs = app.Fs.Value;     % get sampling rate from entry box
+        fs = app.Fs.Value;     % get sampling rate from entry box, most commonly 44100
         nfft = app.NFFT.Value; % get nfft from entry box
-        pb = rand(2*fs,1)-0.5; % pb = 2 sec of random noise
-        win = ones(size(pb));  % win = array of 1s 
-        ramp=linspace(0,pi,round(fs/5));   % creates a vector (like an array) = linspace(min(x), max(x), #points)
+        pb = rand(2*fs,1)-0.5;  % Generates a 1 column vector of length 2*44100, in which each number falls in the range [-0.5,0.5]
+        win = ones(size(pb));   % make a one column vector of ones, of length pb
+        ramp=linspace(0,pi,round(fs/5));   % ramp = a row vector of evenly spaced points (44100/5) between pi-0.
+                                                % (is similar to the colon operator, “:”, but gives direct control
+                                                % over the number of points and always includes the endpoints.)
+       
+        win(1:length(ramp)) = 0.5*sin(ramp-pi/2) + 0.5;
+        % the length of the rise envelope is set to... 
         
-        % not sure what this code exactly does yet...
-        win(1:length(ramp)) = 0.5*sin(ramp-pi/2) + 0.5; 
+        % to see what the line above accomplishes...
+        % pb = pb.*win;
+        % plot(pb)
+        
         win(length(win)-(length(ramp)-1):end) = 0.5*cos(ramp) + 0.5;
+        % the length of the fall envelope is set to... 
+        
         pb = pb.*win;
-        pb = 0.4 * pb;
-        padding = zeros(fs/6,1);    % is padding the same thing as silence?
-        pb1 = [padding; pb; padding; padding; padding]; 
+        % note that max amplitude here is 0.5
+        
+        pb = 0.3 * pb; % reduce amplitude for calculating filter
+        % plot (pb) - now the max amplitude is 0.15
+
+        padding = zeros(app.sampling_rate.Value/6,1);
+        % Generates a 1 column vector of 0s, of length 44100/6 - this is
+        % silence to put on either side of the noise burst
+        
+        pb1 = [padding; pb; padding; padding; padding];
+
         pb8ch(:,1:8) = repmat(pb1,1,8); 
         
         audiowrite('Noise_8ch.wav',pb8ch,fs)    % create wave file = audiowrite(name, data, sampling rate)
