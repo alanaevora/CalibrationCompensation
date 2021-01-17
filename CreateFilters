@@ -5,6 +5,12 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 import numpy as np
+import sounddevice as sd
+import soundfile as sf
+import scipy
+from scipy import signal
+import matplotlib.pyplot as plt
+import tkscrolledframe as sframe
 
 class CreateFiltersModel:
     def __init__(self):
@@ -12,26 +18,26 @@ class CreateFiltersModel:
 
     # controller > model (receiver)
     def create_filters_func(self, low_freq, high_freq, sample_rate, nfft):
-        print("model_home - creating filters")
+        self.low_freq = low_freq
+        self.high_freq = high_freq
+        self.sample_rate = sample_rate
+        self.nfft = nfft
+        print("model - creating filters")
         print("low freq : " + str(low_freq))
         print("high freq: " + str(high_freq))
         print("sample rate: " + str(sample_rate))
         print("nfft: " + str(nfft))
         # code to actually create the filter here
+
+        self.filter_calc()
+
         # added random figure for now
-        self.fig = Figure(figsize=(5, 2), dpi=100)
-        self.t = np.arange(0, 3, .01)
-        self.fig.add_subplot(111).plot(self.t, 2 * np.sin(2 * np.pi * self.t))
-        self.display_filters()
+        # self.fig = Figure(figsize=(5, 2), dpi=100)
+        # self.t = np.arange(0, 3, .01)
+        # self.fig.add_subplot(111).plot(self.t, 2 * np.sin(2 * np.pi * self.t))
+        # self.display_filters()
 
-    # model > controller (sender)
-    def display_filters(self):
-        print("model - filters ready")
-        pub.sendMessage("Displaying_Filters")
-
-    def get_ch1_fig(self):
-        return self.fig
-    
+    # while editing, all of the checks will appear in the console (not the ui)
     def filter_calc(self):
         print("in the filter_cal function")
         # fs = self.sample_rate # will get sampling rate from entry box
@@ -41,14 +47,28 @@ class CreateFiltersModel:
         nfft = 100              # only use for testing < DELETE LATER
 
         # CREATING THE RANDOM NOISE
-        pb = np.random.rand(2 * fs, 1) - 0.5  # generate 2 sec of random noise (vector of evenly spaced random nums)
+        pb = np.random.rand(2 * fs) - 0.5  # generate 2 sec of random noise (vector of evenly spaced random nums)
         win = np.ones(len(pb))  # array of 1s that is the length of the random noise
         ramp = np.linspace(0, np.pi, round(fs/5))   # creates a vector = linspace(min(x), max(x), #points)
-        win[0:len(ramp)] = 0.5*np.sin(ramp-np.pi/2) + 0.5   # gradually increase at the beginning
-        win[len(win) - len(ramp) - 1: -1] = 0.5 * np.cos(ramp) + 0.5  # gradually decrease at the end
+        win[0:len(ramp)] = 0.5*np.sin(ramp-np.pi/2) + 0.5   # gradually taper at the beginning
+        win[len(win) - len(ramp) : len(win)] = 0.5 * np.cos(ramp) + 0.5  # gradually taper at the end
+        pb = pb * win
+
+        # # UNCOMMENT & PRESS GENERATE FILTERS BUTTON TO SEE THE FIGURES BELOW
+        # # for testing... view the window
+        # self.fig = Figure(figsize=(5, 5), dpi=100)
+        # self.fig_text = "window"
+        # self.t = np.arange(0, 960, .01)
+        # self.fig.add_subplot(111).plot(self.t, win)
+        # self.display_filters()
+        # # for testing... view the random noise
+        # self.fig = Figure(figsize=(5, 5), dpi=100)
+        # self.fig_text = "pb"
+        # self.t = np.arange(0, 960, .01)
+        # self.fig.add_subplot(111).plot(self.t, pb)
+        # self.display_filters()
 
         # ADDING PADDING TO THE RANDOM NOISE
-        # pb = 0.4 * pb # why
         padding = np.zeros(round(fs/6))  # array of 0s that is 1/6 of the length of the window
         pb1 = []
         pb1 = np.append(pb1, padding)
@@ -58,7 +78,8 @@ class CreateFiltersModel:
         pb1 = np.append(pb1, padding)
 
         # for testing... view the noise > DELETE LATER
-        self.fig = Figure(figsize=(5, 2), dpi=100)
+        self.fig = Figure(figsize=(5, 5), dpi=100)
+        self.fig_text = "pb1"
         self.t = np.arange(0, 1280, .01)
         self.fig.add_subplot(111).plot(self.t, pb1)
         self.display_filters()
@@ -69,13 +90,12 @@ class CreateFiltersModel:
         file_reader, sample_rate = sf.read('Noise_8ch.wav')  # open & read random noise file
 
         # FOR TESTING AT HOME I AM GOING TO USE 1 channel
-        print(sd.query_devices())
-        print("USING THIS DEVICE: " + sd.default.device)
+        print("AVAILABLE CHANNELS: \n" + str(sd.query_devices()))
+        print("USING THESE CHANNELS: " + str(sd.default.device))
 
         # RECORDING
         # record to wave file source: https://python-sounddevice.readthedocs.io/en/0.4.1/usage.html#recording
-        # possible source for APO: https://python-sounddevice.readthedocs.io/en/0.3.11/#sounddevice.AsioSettings
-        # file_reader, sample_rate = sf.read('skittles.wav')  # using this file for testing > DELETE LATER
+        # possible source for APO: https://python-sounddevice.readthedocs.io/en/0.3.11/#sounddevice.AsioSetting
         print("RECORDING...")
         audio_recorded = sd.playrec(file_reader, fs, channels=1)  # playing and recording simultaneously & saving audio as NumPy array
         sd.wait()  # wait for the recording to finish before moving on
@@ -84,11 +104,13 @@ class CreateFiltersModel:
         # ADJUSTING THE AMP
         pre_rec, sample_rate = sf.read('pre-rec.wav')  # open the recorded file
         # for testing... view the recording > DELETE LATER
-        self.fig = Figure(figsize=(5, 2), dpi=100)
+        self.fig = Figure(figsize=(5, 5), dpi=100)
+        self.fig_text = "pre_rec"
         self.t = np.arange(0, 1280, .01)
         self.fig.add_subplot(111).plot(self.t, pre_rec)
         self.display_filters()
-        if max(abs(pre_rec)) > 0.05:                # still need to figure out what this is doing
+
+        if max(abs(pre_rec)) > 0.2:                # still need to figure out what this is doing
             print("exceeds max amp")
             adjust = 0.2 / max(abs(pre_rec))
             pb8ch = adjust * pb8ch
@@ -122,7 +144,9 @@ class CreateFiltersModel:
             low_freq = 200                  # for testing > DELETE LATER
             high_freq = 800                 # for testing > DELETE LATER
             lo = np.math.floor(low_freq / (fs / nfft))
+            print("lo " + str(lo))
             hi = np.math.floor(high_freq / (fs / nfft))
+            print("hi " + str(hi))
 
             rec_c_spec = []
             for s in pb8ch:
@@ -145,7 +169,18 @@ class CreateFiltersModel:
             r[hi + 10: -1, :] = 0   # adjusting values that go over the high freq
 
             # CREATING FILTERS
-            fr = np.linspace(0,1, len(r))
+            fr = np.linspace(0, 1, len(r))
+
+    # model > controller (sender)
+    def display_filters(self):
+        print("model - filters ready")
+        pub.sendMessage("Displaying_Filters")
+
+    def get_fig(self):
+        return self.fig
+
+    def get_fig_text(self):
+        return self.fig_text
 
 
 class CreateFiltersView:
@@ -154,12 +189,12 @@ class CreateFiltersView:
         self.parent = parent     # The frame the widgets are packed in
 
         # settings:
-        self.p_color = '#255403'      # primary color -   main background
-        self.s_color = '#3A8504'      # secondary color - frame color
-        self.t_color = '#87CA0C'      # tertiary color -  accent color
-        self.h_font = 'calibri 40'    # header font
-        self.sh_font = 'verdana 15'   # subheader font
-        self.r_font = 'calibri 10'    # regular font
+        self.p_color = '#004393'  # primary color -   main background
+        self.s_color = '#3A8504'  # secondary color - frame color
+        self.t_color = '#87CA0C'  # tertiary color -  accent color
+        self.h_font = 'calibri 40'  # header font
+        self.sh_font = 'verdana 15'  # subheader font
+        self.r_font = 'calibri 10'  # regular font
         return
 
     # this method runs first, and calls the methods below
@@ -170,37 +205,52 @@ class CreateFiltersView:
     # creates the widgets
     def create_widgets(self):
         # creating the main frames
-        self.main_frame = Frame(self.parent, height=673, width=1100, background=self.t_color)    # main frame that holds the widgets
-        self.left_frame = Frame(self.main_frame, background=self.t_color)                        # frame that holds the figures on the left
-        self.right_frame = Frame(self.main_frame, background=self.t_color)                       # frame that holds the input boxes on the right
+        self.main_frame = tk.Frame(self.parent, width=1200, height=750,
+                                   background=self.p_color)  # main frame that holds the widgets
+        self.scrollable_frame = sframe.ScrolledFrame(self.main_frame, width=1200, height=750, background=self.p_color)
+        # Bind the arrow keys and scroll wheel
+        self.scrollable_frame.bind_arrow_keys(self.main_frame)
+        self.scrollable_frame.bind_scroll_wheel(self.main_frame)
+        # creating a frame within the ScrolledFrame
+        # main screen image
+        self.inner_frame = self.scrollable_frame.display_widget(Frame, width=1175, height=744, background=self.p_color)
+        self.inner_main_frame = Frame(self.inner_frame, height=2000, width=1100)    # main frame that holds the widgets
+        self.title = Label(self.inner_main_frame, text="Create Filters", font="systemSystemFont 30")
+        self.left_frame = Frame(self.inner_main_frame)                        # frame that holds the figures on the left
+        self.right_frame = Frame(self.inner_main_frame)                       # frame that holds the input boxes on the right
         # widgets inside left frame - freq range
-        self.freq_range_frame = tk.LabelFrame(self.left_frame, text="Frequency range", background=self.t_color) # freq range box
-        self.low_freq_frame = tk.Frame(self.freq_range_frame, background=self.t_color)
-        self.low_freq_label = tk.Label(self.low_freq_frame, text="Low freq", background=self.t_color)
+        self.freq_range_frame = tk.LabelFrame(self.left_frame, text="Frequency range") # freq range box
+        self.low_freq_frame = tk.Frame(self.freq_range_frame)
+        self.low_freq_label = tk.Label(self.low_freq_frame, text="Low freq")
         self.low_freq_ctrl = tk.Entry(self.low_freq_frame, width=8)
-        self.high_freq_frame = tk.Frame(self.freq_range_frame, background=self.t_color)
-        self.high_freq_label = tk.Label(self.high_freq_frame, text="High freq", background=self.t_color)
+        self.high_freq_frame = tk.Frame(self.freq_range_frame)
+        self.high_freq_label = tk.Label(self.high_freq_frame, text="High freq")
         self.high_freq_ctrl = tk.Entry(self.high_freq_frame, width=8)
         # widgets inside left frame - sampling rate
-        self.sample_nfft_frame = tk.LabelFrame(self.left_frame, text="Sampling rate", background=self.t_color)  # sample rate box
-        self.sample_rate_frame = tk.Frame(self.sample_nfft_frame, background=self.t_color)
-        self.sample_rate_label = tk.Label(self.sample_rate_frame, text="Sampling rate", background=self.t_color)
+        self.sample_nfft_frame = tk.LabelFrame(self.left_frame, text="Sampling rate")  # sample rate box
+        self.sample_rate_frame = tk.Frame(self.sample_nfft_frame)
+        self.sample_rate_label = tk.Label(self.sample_rate_frame, text="Sampling rate")
         self.sample_rate_ctrl = tk.Entry(self.sample_rate_frame, width=8)
-        self.nfft_frame = tk.Frame(self.sample_nfft_frame, background=self.t_color)
-        self.nfft_label = tk.Label(self.nfft_frame, text="nfft", background=self.t_color)
+        self.nfft_frame = tk.Frame(self.sample_nfft_frame)
+        self.nfft_label = tk.Label(self.nfft_frame, text="nfft")
         self.nfft_ctrl = tk.Entry(self.nfft_frame, width=8)
         # widgets inside left frame - create filters button
-        self.create_filters = tk.Button(self.left_frame, text="Generate Compensation Filter", width=24,
-                                        command=self.create_filters, background=self.t_color)
+        self.create_filters = tk.Button(self.left_frame, text="Generate Compensation Filters", width=24,
+                                        command=self.create_filters)
         # widgets inside right frame - figures
-        self.filters_frame = tk.LabelFrame(self.right_frame, text="Generated Filters", background=self.t_color)
+        self.filters_frame = tk.LabelFrame(self.right_frame, text="Filters")
+
 
     # packs (orients) the widgets
     def setup_layout(self):
         # orienting the main frames
         self.main_frame.pack(pady=10)
         self.main_frame.pack_propagate(0)
-        self.right_frame.pack(side='right', anchor='n')
+        self.scrollable_frame.pack(side=TOP, fill="both")
+        self.inner_main_frame.pack(pady=10)
+        self.inner_main_frame.pack_propagate(0)
+        self.title.pack(pady=10, padx=10)
+        self.right_frame.pack(side='right', anchor='n', fill='both')
         self.left_frame.pack(side='left', anchor='n')
         # orienting the widgets inside the left frame - freq range
         self.freq_range_frame.pack(expand="yes", anchor="nw", padx=10)
@@ -219,9 +269,9 @@ class CreateFiltersView:
         self.nfft_label.pack(side='left', padx=10, pady=5)
         self.nfft_ctrl.pack(side='right', pady=5)
         # orienting the widgets inside the left frame - create filters button
-        self.create_filters.pack(side="bottom", pady=10)
+        self.create_filters.pack(side="bottom", pady=10, fill='both')
         # orienting the widgets inside left frame - figures
-        self.filters_frame.pack(expand='yes', fill='x')
+        self.filters_frame.pack(expand='yes', fill='y')
 
     def get_low_freq(self):
         return self.low_freq_ctrl.get()
@@ -238,14 +288,14 @@ class CreateFiltersView:
         pub.sendMessage("Create_Filters_Button_Pressed")        # sends message to controller
 
     # controller > view (reciever)
-    def display_filters_func(self, ch1_fig):
+    def display_filters_func(self, fig, fig_text):
         print("view - display_filters")                         # prints to console
-        self.create_filter_widgets(ch1_fig)                     # create filter widgets
+        self.create_filter_widgets(fig, fig_text)               # create filter widgets
         self.setup_filters_layout()                             # orient filter widgets
-    def create_filter_widgets(self, ch1_fig):
+    def create_filter_widgets(self, fig, fig_text):
         self.channel_frame = tk.Frame(self.filters_frame, background=self.t_color)
-        self.label = tk.Label(self.channel_frame, text="Channel 1", background=self.t_color)
-        self.canvas = FigureCanvasTkAgg(ch1_fig, master=self.channel_frame)
+        self.label = tk.Label(self.channel_frame, text=fig_text, background=self.t_color)
+        self.canvas = FigureCanvasTkAgg(fig, master=self.channel_frame)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.channel_frame)
     def setup_filters_layout(self):
         self.channel_frame.pack(fill='both', anchor='nw')
@@ -280,9 +330,10 @@ class CreateFiltersController:
 
     # controller > view
     def display_filters(self):
-        print("controller - displaying filters")                # prints to console
-        self.ch1_fig = self.model_create.get_ch1_fig()
-        self.view_create.display_filters_func(self.ch1_fig)
+        print("controller - displaying filters")               # prints to console
+        self.fig = self.model_create.get_fig()
+        self.fig_text = self.model_create.get_fig_text()
+        self.view_create.display_filters_func(self.fig, self.fig_text)
 
 # Can run this file in its own window here (not part of the main window)
 if __name__ == "__main__":
