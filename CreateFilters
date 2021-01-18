@@ -148,28 +148,95 @@ class CreateFiltersModel:
             hi = np.math.floor(high_freq / (fs / nfft))
             print("hi " + str(hi))
 
-            rec_c_spec = []
+            # GETTING THE AMP SPEC OF THE ORIGINAL (EITHER RANDOM NOISE OR PREVIOUSLY FILTERED NOISE)
+            rec_c_spect = []
             for s in pb8ch:
                 # for each filter, calculate the amplitude spec and save it in an array
-                rec_c_spec = np.append(rec_c_spec, scipy.signal.welch(s))
+                rec_c_spect = np.append(rec_c_spect, scipy.signal.welch(s))
 
             # make plots here
 
-            # GETTING THE AMP SPEC
-            input_spec = []
+            # GETTING THE AMP SPEC OF THE RECORDINGS
+            input_spect = []
             for s in pb8ch:
                 # for each filter, calculate the amplitude spec and save it in an array
-                input_spec = np.append(input_spec, scipy.signal.welch(s))
+                input_spect = np.append(input_spect, scipy.signal.welch(s))
 
             # MINIMIZE OUT OF RANGE FREQS
             r = []
             for s in pb8ch:
-                r = np.apend(r, np.divide(input_spec, rec_c_spec))
-            r[1:lo, :] = 0          # adjusting values that go under the low freq
-            r[hi + 10: -1, :] = 0   # adjusting values that go over the high freq
+                # compare the input amp spec and the recorded amp spec (to determine which freqs are being affected by the substrate)
+                r = np.apend(r, np.divide(input_spect, rec_c_spect))
+
+            # "erasing" points in the amp spec that are outside of the freq range specified by the user
+            r[1:lo, :] = 0          # silencing values that go under the low freq
+            r[hi + 10: -1, :] = 0   # silencing values that go over the high freq
 
             # CREATING FILTERS
             fr = np.linspace(0, 1, len(r))
+
+            b = []
+            for s in pb8ch:
+                # b = np.apend(b, signal.firwin2())
+                # scipy.signal.firwin2(numtaps, freq, gain, nfreqs, window='hamming', antisymmatric, fs=None)
+
+                # scipy.signal.firwin2(numtaps, freq, gain, nfreqs, window='hamming', antisymmatric, fs=None)
+                # numtaps = length of filter ie number of coefficients ie filter order + 1 = ?
+                # gain = filter gains at freq sampling points = ?
+                # nfreqs = size of interpolation mesh used to construct filter =
+                # window = window = hamming
+                # nyq = nyquist frequency
+                # antisymmetric = whether resulting impulse is symmetrical or not = false
+                # fs = sampling rate = fs
+                # RETURNS = filter coefficients of the IFR filter as 1-D array  of length numtaps
+
+            a = np.zeros(len(b))    # creating padding
+            a[1, :] = 1             # setting the beginning of the padding to 1
+
+            # FILTER THE ORIGINAL (OR PREVIOUSLY FILTERED NOISE)
+            if iter == 1:
+                for s in pb8ch:
+                    # w[:, s] =  # filter func using pb8ch as input
+            else:
+                w = []  # clear it
+                for s in pb8ch:
+                    # w[:, s] =  # filter func using pb8ch_f as input
+
+            # SAVE THE FILTERED NOISE
+            # avoid clipping: multiply the filters by adding padding
+            wn = np.multiply(w, 1. / (10 * max(w)))
+            sf.write('Noise_8ch_f.wav', wn, fs)
+
+            iter = iter + 1 # move onto next iteration
+
+        # DESIGN THE OVERALL FILTER & SAVE IT
+        final_spect = np.zeros((nfft/2 + 1), 8) # is this a window?
+
+        for s in pb8ch:
+            # final_spect[:, s] = pwelch()
+
+        rf = np.zeros(len(final_spect))
+
+        for s in signal:
+            rf[:, s] = np.divide(final_spect[:, s], input_spect)
+
+        rf[1: lo, :] = 0                    # silencing values that go under the low freq specified by user
+        rf[hi: len(rf), :] = 0              # silencing values that go over the high freq specified by user
+        frf = np.linspace(0, 1, len(rf))    # ?
+        rf = np.divide(rf, 1.05 * max (rf)) # ?
+        # save rf in file 'rf'
+
+        # DESIGN FILTERS
+        for s in pb8ch:
+            # bf[:, s] = signal.firwin2
+
+        # af = np.zeros(len(bf))
+        # af[1, :] = 1
+        # save bf in file 'b8'
+        # save af in file 'a8'
+
+
+
 
     # model > controller (sender)
     def display_filters(self):
